@@ -1,0 +1,212 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h1>
+    <a asp-controller="Transactions" asp-action="Create" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i>Add Transaction
+    </a>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Current Month Income</h5>
+                        <h2 class="card-text">Rs. @Model.CurrentMonthIncome.ToString("N2")</h2>
+                    </div>
+                    <div class="display-4">
+                        <i class="fas fa-arrow-up"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Current Month Expenses</h5>
+                        <h2 class="card-text">Rs. @Model.CurrentMonthExpenses.ToString("N2")</h2>
+                    </div>
+                    <div class="display-4">
+                        <i class="fas fa-arrow-down"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card @(Model.NetBalance >= 0 ? "bg-primary" : "bg-warning") text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Net Balance</h5>
+                        <h2 class="card-text">Rs. @Model.NetBalance.ToString("N2")</h2>
+                    </div>
+                    <div class="display-4">
+                        <i class="fas @(Model.NetBalance >= 0 ? "fa-balance-scale" : "fa-exclamation-triangle")"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Charts Section -->
+    <div class="col-lg-8 mb-4">
+        <!-- Monthly Trend Chart -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line me-2"></i>Monthly Trend (Last 6 Months)</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="monthlyTrendChart" height="100"></canvas>
+            </div>
+        </div>
+
+        <!-- Expenses by Category Chart -->
+        @if (Model.ExpensesByCategory.Any())
+        {
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-pie me-2"></i>Current Month Expenses by Category</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="expensesCategoryChart" height="100"></canvas>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-history me-2"></i>Recent Transactions</h5>
+                <a asp-controller="Transactions" asp-action="Index" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.RecentTransactions.Any())
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var transaction in Model.RecentTransactions)
+                        {
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <div class="fw-bold">@transaction.Description</div>
+                                        <small class="text-muted">@transaction.Category.Name • @transaction.Date.ToString("MMM dd")</small>
+                                    </div>
+                                    <span class="badge @(transaction.Type == TransactionType.Income ? "bg-success" : "bg-danger")">
+                                        @(transaction.Type == TransactionType.Income ? "+" : "-")Rs. @transaction.Amount.ToString("N2")
+                                    </span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No transactions yet</p>
+                        <a asp-controller="Transactions" asp-action="Create" class="btn btn-primary">Add Your First Transaction</a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Monthly Trend Chart
+        const monthlyCtx = document.getElementById('monthlyTrendChart').getContext('2d');
+        const monthlyChart = new Chart(monthlyCtx, {
+            type: 'line',
+            data: {
+                labels: @Html.Raw(Json.Serialize(Model.MonthlyData.Select(m => m.Month))),
+                datasets: [{
+                    label: 'Income',
+                    data: @Html.Raw(Json.Serialize(Model.MonthlyData.Select(m => m.Income))),
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    tension: 0.1
+                }, {
+                    label: 'Expenses',
+                    data: @Html.Raw(Json.Serialize(Model.MonthlyData.Select(m => m.Expenses))),
+                    borderColor: '#dc3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'Rs. ' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': Rs. ' + context.parsed.y.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        @if (Model.ExpensesByCategory.Any())
+        {
+            <text>
+            // Expenses by Category Chart
+            const categoryCtx = document.getElementById('expensesCategoryChart').getContext('2d');
+            const categoryChart = new Chart(categoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: @Html.Raw(Json.Serialize(Model.ExpensesByCategory.Select(c => c.CategoryName))),
+                    datasets: [{
+                        data: @Html.Raw(Json.Serialize(Model.ExpensesByCategory.Select(c => c.Amount))),
+                        backgroundColor: @Html.Raw(Json.Serialize(Model.ExpensesByCategory.Select(c => c.Color)))
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return context.label + ': Rs. ' + context.parsed.toLocaleString() + ' (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            </text>
+        }
+    </script>
+}

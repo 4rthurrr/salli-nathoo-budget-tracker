@@ -1,0 +1,99 @@
+@model TransactionViewModel
+@{
+    ViewData["Title"] = "Edit Transaction";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="fas fa-edit me-2"></i>Edit Transaction</h4>
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit" method="post">
+                    <input asp-for="Id" type="hidden" />
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Amount" class="form-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text">Rs.</span>
+                                <input asp-for="Amount" class="form-control" placeholder="0.00" step="0.01" />
+                            </div>
+                            <span asp-validation-for="Amount" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Date" class="form-label"></label>
+                            <input asp-for="Date" class="form-control" type="date" />
+                            <span asp-validation-for="Date" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Type" class="form-label"></label>
+                            <select asp-for="Type" class="form-select" id="transactionType">
+                                <option value="">Select Type</option>
+                                <option value="@TransactionType.Income" class="text-success">Income</option>
+                                <option value="@TransactionType.Expense" class="text-danger">Expense</option>
+                            </select>
+                            <span asp-validation-for="Type" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="CategoryId" class="form-label"></label>
+                            <select asp-for="CategoryId" asp-items="Model.Categories" class="form-select" id="categorySelect">
+                                <option value="">Select Category</option>
+                            </select>
+                            <span asp-validation-for="CategoryId" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label"></label>
+                        <input asp-for="Description" class="form-control" placeholder="Enter description" />
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a asp-action="Index" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-times me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Update Transaction
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        $(document).ready(function() {
+            $('#transactionType').change(function() {
+                var selectedType = $(this).val();
+                if (selectedType) {
+                    $.get('@Url.Action("GetCategoriesByType", "Transactions")', { type: selectedType }, function(data) {
+                        var categorySelect = $('#categorySelect');
+                        var currentCategoryId = @Model.CategoryId;
+                        categorySelect.empty();
+                        categorySelect.append('<option value="">Select Category</option>');
+                        
+                        $.each(data, function(index, item) {
+                            var selected = item.value == currentCategoryId ? 'selected' : '';
+                            categorySelect.append('<option value="' + item.value + '" ' + selected + '>' + item.text + '</option>');
+                        });
+                    });
+                }
+            });
+
+            // Trigger change event on page load to populate categories
+            $('#transactionType').trigger('change');
+        });
+    </script>
+}

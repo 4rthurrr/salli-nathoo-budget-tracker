@@ -1,0 +1,7 @@
+@{
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    window.renderBody = @Html.Raw(Json.Serialize(await RenderSectionAsync("Scripts", required: false)));
+</script>

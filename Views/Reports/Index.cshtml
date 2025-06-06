@@ -1,0 +1,231 @@
+@model IEnumerable<Transaction>
+@{
+    ViewData["Title"] = "Reports";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-chart-bar me-2"></i>Reports</h1>
+    <div class="btn-group">
+        <a asp-action="ExportToCsv" class="btn btn-success">
+            <i class="fas fa-download me-1"></i>Export to CSV
+        </a>
+        <a asp-action="Monthly" class="btn btn-outline-primary">
+            <i class="fas fa-calendar me-1"></i>Monthly View
+        </a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Total Income</h5>
+                <h3 class="text-success">Rs. @Model.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount).ToString("N2")</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Total Expenses</h5>
+                <h3 class="text-danger">Rs. @Model.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount).ToString("N2")</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Net Balance</h5>
+                @{
+                    var totalIncome = Model.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount);
+                    var totalExpenses = Model.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount);
+                    var netBalance = totalIncome - totalExpenses;
+                }
+                <h3 class="@(netBalance >= 0 ? "text-success" : "text-danger")">Rs. @netBalance.ToString("N2")</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.Any())
+{
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-pie me-2"></i>Expenses by Category</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="expensesByCategoryChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-line me-2"></i>Monthly Comparison</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="monthlyComparisonChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-table me-2"></i>All Transactions</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped" id="transactionsTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Category</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var transaction in Model.OrderByDescending(t => t.Date))
+                        {
+                            <tr>
+                                <td>@transaction.Date.ToString("MMM dd, yyyy")</td>
+                                <td>@transaction.Description</td>
+                                <td><span class="badge bg-secondary">@transaction.Category.Name</span></td>
+                                <td>
+                                    @if (transaction.Type == TransactionType.Income)
+                                    {
+                                        <span class="badge bg-success">Income</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Expense</span>
+                                    }
+                                </td>
+                                <td class="@(transaction.Type == TransactionType.Income ? "text-success" : "text-danger") fw-bold">
+                                    @(transaction.Type == TransactionType.Income ? "+" : "-")Rs. @transaction.Amount.ToString("N2")
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="text-center py-5">
+        <i class="fas fa-chart-bar fa-4x text-muted mb-4"></i>
+        <h3 class="text-muted">No data to show</h3>
+        <p class="text-muted">Add some transactions to see your reports.</p>
+        <a asp-controller="Transactions" asp-action="Create" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Add Transaction
+        </a>
+    </div>
+}
+
+@section Scripts {
+    @if (Model.Any())
+    {
+        <script>
+            // Expenses by Category Chart
+            var expensesData = @Html.Raw(Json.Serialize(
+                Model.Where(t => t.Type == TransactionType.Expense)
+                     .GroupBy(t => t.Category.Name)
+                     .Select(g => new { Category = g.Key, Amount = g.Sum(t => t.Amount) })
+                     .OrderByDescending(x => x.Amount)
+            ));
+
+            if (expensesData.length > 0) {
+                const categoryCtx = document.getElementById('expensesByCategoryChart').getContext('2d');
+                new Chart(categoryCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: expensesData.map(item => item.category),
+                        datasets: [{
+                            data: expensesData.map(item => item.amount),
+                            backgroundColor: [
+                                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+                                '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                        return context.label + ': Rs. ' + context.parsed.toLocaleString() + ' (' + percentage + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Monthly Comparison Chart
+            var monthlyData = @Html.Raw(Json.Serialize(
+                Model.GroupBy(t => new { t.Date.Year, t.Date.Month })
+                     .Select(g => new {
+                         Month = new DateTime(g.Key.Year, g.Key.Month, 1).ToString("MMM yyyy"),
+                         Income = g.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount),
+                         Expenses = g.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount)
+                     })
+                     .OrderBy(x => x.Month)
+            ));
+
+            if (monthlyData.length > 0) {
+                const monthlyCtx = document.getElementById('monthlyComparisonChart').getContext('2d');
+                new Chart(monthlyCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: monthlyData.map(item => item.month),
+                        datasets: [{
+                            label: 'Income',
+                            data: monthlyData.map(item => item.income),
+                            backgroundColor: '#28a745'
+                        }, {
+                            label: 'Expenses',
+                            data: monthlyData.map(item => item.expenses),
+                            backgroundColor: '#dc3545'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return 'Rs. ' + value.toLocaleString();
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.dataset.label + ': Rs. ' + context.parsed.y.toLocaleString();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        </script>
+    }
+}

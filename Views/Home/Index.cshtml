@@ -1,0 +1,112 @@
+@{
+    ViewData["Title"] = "Welcome to Budget Tracker";
+}
+
+<div class="hero-section bg-primary text-white py-5 mb-5 rounded">
+    <div class="container text-center">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h1 class="display-4 fw-bold mb-4">
+                    <i class="fas fa-piggy-bank me-3"></i>
+                    Welcome to සල්ලි නැතෝ
+                </h1>
+                <p class="lead mb-4">
+                    Take control of your finances with our easy-to-use budget tracking application. 
+                    Monitor your income, track expenses, and achieve your financial goals.
+                </p>
+                @if (!User.Identity.IsAuthenticated)
+                {
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                        <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-light btn-lg me-md-2">
+                            <i class="fas fa-sign-in-alt me-2"></i>Login with Google
+                        </a>
+                        <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-outline-light btn-lg">
+                            <i class="fas fa-user-plus me-2"></i>Create Account
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <a asp-controller="Dashboard" asp-action="Index" class="btn btn-light btn-lg">
+                        <i class="fas fa-tachometer-alt me-2"></i>Go to Dashboard
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row mb-5">
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="feature-icon bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                        <i class="fas fa-chart-line fa-lg"></i>
+                    </div>
+                    <h3 class="card-title">Track Expenses</h3>
+                    <p class="card-text">
+                        Easily categorize and monitor your spending across different categories like food, rent, utilities, and entertainment.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="feature-icon bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                        <i class="fas fa-wallet fa-lg"></i>
+                    </div>
+                    <h3 class="card-title">Monitor Income</h3>
+                    <p class="card-text">
+                        Keep track of all your income sources including salary, freelance work, and investments in one place.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="feature-icon bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                        <i class="fas fa-chart-pie fa-lg"></i>
+                    </div>
+                    <h3 class="card-title">Visual Reports</h3>
+                    <p class="card-text">
+                        Get insights into your spending patterns with beautiful charts and detailed monthly reports.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title">
+                        <i class="fas fa-shield-alt text-success me-2"></i>
+                        Secure & Private
+                    </h3>
+                    <p class="card-text">
+                        Your financial data is protected with industry-standard security measures. 
+                        Login securely with your Google account using OAuth 2.0 authentication.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title">
+                        <i class="fas fa-mobile-alt text-primary me-2"></i>
+                        Mobile Friendly
+                    </h3>
+                    <p class="card-text">
+                        Access your budget from anywhere with our responsive design that works 
+                        perfectly on desktop, tablet, and mobile devices.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,215 @@
+@model IEnumerable<Transaction>
+@{
+    ViewData["Title"] = $"Monthly Report - {ViewBag.MonthName}";
+    var year = ViewBag.Year;
+    var month = ViewBag.Month;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-calendar me-2"></i>@ViewBag.MonthName Report</h1>
+    <div class="btn-group">
+        <a asp-action="Monthly" asp-route-year="@year" asp-route-month="@(month == 1 ? 12 : month - 1)" asp-route-year="@(month == 1 ? year - 1 : year)" class="btn btn-outline-secondary">
+            <i class="fas fa-chevron-left"></i>
+        </a>
+        <a asp-action="Monthly" asp-route-year="@year" asp-route-month="@(month == 12 ? 1 : month + 1)" asp-route-year="@(month == 12 ? year + 1 : year)" class="btn btn-outline-secondary">
+            <i class="fas fa-chevron-right"></i>
+        </a>
+        <a asp-action="Index" class="btn btn-outline-primary">All Time</a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-center bg-success text-white">
+            <div class="card-body">
+                <h5>Monthly Income</h5>
+                <h3>Rs. @Model.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount).ToString("N2")</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center bg-danger text-white">
+            <div class="card-body">
+                <h5>Monthly Expenses</h5>
+                <h3>Rs. @Model.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount).ToString("N2")</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center bg-primary text-white">
+            <div class="card-body">
+                <h5>Net Balance</h5>
+                @{
+                    var monthlyIncome = Model.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount);
+                    var monthlyExpenses = Model.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount);
+                    var monthlyBalance = monthlyIncome - monthlyExpenses;
+                }
+                <h3>Rs. @monthlyBalance.ToString("N2")</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.Any())
+{
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-pie me-2"></i>Expenses Breakdown</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="monthlyExpensesChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-list me-2"></i>Daily Summary</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="dailySummaryChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-table me-2"></i>Monthly Transactions</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Category</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var transaction in Model.OrderByDescending(t => t.Date))
+                        {
+                            <tr>
+                                <td>@transaction.Date.ToString("MMM dd, yyyy")</td>
+                                <td>@transaction.Description</td>
+                                <td><span class="badge bg-secondary">@transaction.Category.Name</span></td>
+                                <td>
+                                    @if (transaction.Type == TransactionType.Income)
+                                    {
+                                        <span class="badge bg-success">Income</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Expense</span>
+                                    }
+                                </td>
+                                <td class="@(transaction.Type == TransactionType.Income ? "text-success" : "text-danger") fw-bold">
+                                    @(transaction.Type == TransactionType.Income ? "+" : "-")Rs. @transaction.Amount.ToString("N2")
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="text-center py-5">
+        <i class="fas fa-calendar-times fa-4x text-muted mb-4"></i>
+        <h3 class="text-muted">No transactions for @ViewBag.MonthName</h3>
+        <p class="text-muted">Start adding transactions for this month to see your report.</p>
+        <a asp-controller="Transactions" asp-action="Create" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Add Transaction
+        </a>
+    </div>
+}
+
+@section Scripts {
+    @if (Model.Any())
+    {
+        <script>
+            // Monthly Expenses Chart
+            var expensesData = @Html.Raw(Json.Serialize(
+                Model.Where(t => t.Type == TransactionType.Expense)
+                     .GroupBy(t => t.Category.Name)
+                     .Select(g => new { Category = g.Key, Amount = g.Sum(t => t.Amount) })
+                     .OrderByDescending(x => x.Amount)
+            ));
+
+            if (expensesData.length > 0) {
+                const expensesCtx = document.getElementById('monthlyExpensesChart').getContext('2d');
+                new Chart(expensesCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: expensesData.map(item => item.category),
+                        datasets: [{
+                            data: expensesData.map(item => item.amount),
+                            backgroundColor: [
+                                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+                                '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Daily Summary Chart
+            var dailyData = @Html.Raw(Json.Serialize(
+                Model.GroupBy(t => t.Date.Day)
+                     .Select(g => new {
+                         Day = g.Key,
+                         Income = g.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount),
+                         Expenses = g.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount)
+                     })
+                     .OrderBy(x => x.Day)
+            ));
+
+            if (dailyData.length > 0) {
+                const dailyCtx = document.getElementById('dailySummaryChart').getContext('2d');
+                new Chart(dailyCtx, {
+                    type: 'line',
+                    data: {
+                        labels: dailyData.map(item => 'Day ' + item.day),
+                        datasets: [{
+                            label: 'Income',
+                            data: dailyData.map(item => item.income),
+                            borderColor: '#28a745',
+                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                            tension: 0.1
+                        }, {
+                            label: 'Expenses',
+                            data: dailyData.map(item => item.expenses),
+                            borderColor: '#dc3545',
+                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+        </script>
+    }
+}
