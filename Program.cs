@@ -2,6 +2,10 @@ using BudgetTracker.Data;
 using BudgetTracker.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using DotNetEnv;
+
+// Load environment variables from .env file
+Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,13 +29,24 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 })
 .AddEntityFrameworkStores<ApplicationDbContext>();
 
-// Add Google OAuth authentication
-builder.Services.AddAuthentication()
-    .AddGoogle(googleOptions =>
-    {
-        googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"] ?? "";
-        googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"] ?? "";
-    });
+// Add Google OAuth authentication (only if credentials are configured)
+var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+
+if (!string.IsNullOrEmpty(googleClientId) && 
+    !string.IsNullOrEmpty(googleClientSecret) &&
+    googleClientId != "YOUR_GOOGLE_CLIENT_ID" &&
+    googleClientSecret != "YOUR_GOOGLE_CLIENT_SECRET" &&
+    googleClientId != "YOUR_DEVELOPMENT_GOOGLE_CLIENT_ID" &&
+    googleClientSecret != "YOUR_DEVELOPMENT_GOOGLE_CLIENT_SECRET")
+{
+    builder.Services.AddAuthentication()
+        .AddGoogle(googleOptions =>
+        {
+            googleOptions.ClientId = googleClientId;
+            googleOptions.ClientSecret = googleClientSecret;
+        });
+}
 
 builder.Services.AddControllersWithViews();
 

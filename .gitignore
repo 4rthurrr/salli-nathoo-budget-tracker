@@ -12,3 +12,14 @@ wwwroot/lib/
 node_modules/
 appsettings.Development.json
 BudgetTracker.db
+
+# Environment variables - NEVER commit these
+.env
+.env.local
+.env.production
+.env.staging
+
+# Secrets
+secrets.json
+*.pfx
+*.p12

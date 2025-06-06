@@ -14,7 +14,7 @@
                     Take control of your finances with our easy-to-use budget tracking application. 
                     Monitor your income, track expenses, and achieve your financial goals.
                 </p>
-                @if (!User.Identity.IsAuthenticated)
+                @if (User.Identity?.IsAuthenticated != true)
                 {
                     <div class="d-grid gap-2 d-md-flex justify-content-md-center">
                         <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-light btn-lg me-md-2">

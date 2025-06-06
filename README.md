@@ -97,9 +97,24 @@ BudgetTracker/
    cd budget-tracker
    ```
 
-2. **Configure Google OAuth**
+2. **Setup Environment Variables**
+   ```bash
+   # Copy the environment template
+   cp .env.example .env
    
-   Update `appsettings.json`:
+   # Edit .env and add your actual secrets
+   # See ENV_SETUP_GUIDE.md for detailed instructions
+   ```
+
+3. **Configure Google OAuth**
+   
+   Update your `.env` file with Google OAuth credentials:
+   ```bash
+   Authentication__Google__ClientId=your-google-client-id.googleusercontent.com
+   Authentication__Google__ClientSecret=your-google-client-secret
+   ```
+   
+   Or alternatively update `appsettings.json`:
    ```json
    {
      "Authentication": {
@@ -111,7 +126,7 @@ BudgetTracker/
    }
    ```
 
-3. **Install Dependencies**
+4. **Install Dependencies**
    ```bash
    dotnet restore
    ```
